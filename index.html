@@ -2105,8 +2105,29 @@ function hideLoadingScreen() {
 hideLoadingScreen();
 
 window.addEventListener("error", (event) => {
-  console.error("Raisin app error:", event.error || event.message);
   hideLoadingScreen();
+
+  const crash = document.createElement("div");
+  crash.style.position = "fixed";
+  crash.style.left = "12px";
+  crash.style.right = "12px";
+  crash.style.bottom = "12px";
+  crash.style.zIndex = "9999";
+  crash.style.padding = "14px";
+  crash.style.borderRadius = "18px";
+  crash.style.background = "rgba(120,0,0,0.92)";
+  crash.style.color = "white";
+  crash.style.fontSize = "12px";
+  crash.style.fontFamily = "monospace";
+  crash.style.whiteSpace = "pre-wrap";
+  crash.innerText =
+    "RAISIN APP CRASH:\n\n" +
+    (event.message || "Unknown error");
+
+  document.body.appendChild(crash);
+
+  console.error("Raisin app error:", event.error || event.message);
+});
 });
 
 setTimeout(() => {
