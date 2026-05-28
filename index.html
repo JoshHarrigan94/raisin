@@ -381,11 +381,26 @@
 <button class="control-btn" id="resetBtn"><span>↺</span><small>Reset</small></button>
     </div>
   </div>
+  
+  <script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.167.1/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.167.1/examples/jsm/"
+  }
+}
+</script>
+
+<script>
+  setTimeout(() => {
+    const loading = document.getElementById("loadingScreen");
+    if (loading) loading.classList.add("hidden");
+  }, 2500);
+</script>
 
   <script type="module">
-    import * as THREE from "https://esm.sh/three@0.167.1";
-    import { OrbitControls } from "https://esm.sh/three@0.167.1/examples/jsm/controls/OrbitControls.js";
-
+    import * as THREE from "three";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
     /************************************************************
      * 01. CONFIG
      ************************************************************/
