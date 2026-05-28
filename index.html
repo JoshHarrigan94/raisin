@@ -135,7 +135,7 @@
   bottom: max(18px, env(safe-area-inset-bottom));
   transform: translateX(-50%);
   display: grid;
-  grid-template-columns: repeat(4, 70px);
+  grid-template-columns: repeat(6, 64px);
   gap: 10px;
   pointer-events: auto;
 }
@@ -206,6 +206,58 @@
       backdrop-filter: blur(12px);
       display: none;
     }
+    
+    .loading-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(circle at top, #2b1b14 0%, #120d0b 60%, #070504 100%);
+  transition: opacity 500ms ease, visibility 500ms ease;
+}
+
+.loading-screen.hidden {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.loading-card {
+  width: min(320px, calc(100vw - 36px));
+  padding: 26px 22px;
+  border-radius: 28px;
+  text-align: center;
+  background: rgba(255, 248, 235, 0.12);
+  border: 1px solid rgba(255,255,255,0.16);
+  box-shadow: 0 24px 70px rgba(0,0,0,0.45);
+  backdrop-filter: blur(18px);
+}
+
+.loading-paw {
+  font-size: 34px;
+  margin-bottom: 10px;
+}
+
+.loading-card h2 {
+  margin: 0;
+  font-size: 22px;
+  letter-spacing: -0.04em;
+}
+
+.loading-card p {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.hud.hidden-for-photo {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.hud {
+  transition: opacity 220ms ease;
+}
 
     @media (max-width: 640px) {
   .top-card {
@@ -244,7 +296,7 @@
   }
 
   .bottom-controls {
-    grid-template-columns: repeat(4, 64px);
+    grid-template-columns: repeat(6, 54px);
     gap: 8px;
   }
 
@@ -273,13 +325,15 @@
   }
 
   .bottom-controls {
-    grid-template-columns: repeat(4, 58px);
+    grid-template-columns: repeat(6, 49px);
     gap: 7px;
   }
 
   .control-btn {
-    width: 58px;
-    height: 56px;
+
+  width: 49px;
+
+  height: 52px;
   }
 
   .hint {
@@ -291,6 +345,14 @@
 
 <body>
   <div id="app"></div>
+
+<div class="loading-screen" id="loadingScreen">
+  <div class="loading-card">
+    <div class="loading-paw">🐾</div>
+    <h2>Finding Raisin...</h2>
+    <p>Preparing the cosy room.</p>
+  </div>
+</div>
 
   <div class="hud">
     <div class="top-card">
@@ -315,6 +377,8 @@
       <button class="control-btn" id="toyBtn"><span>🎾</span><small>Toy</small></button>
       <button class="control-btn" id="callBtn"><span>💬</span><small>Call</small></button>
       <button class="control-btn" id="napBtn"><span>🌙</span><small>Nap</small></button>
+<button class="control-btn" id="photoBtn"><span>📸</span><small>Photo</small></button>
+<button class="control-btn" id="resetBtn"><span>↺</span><small>Reset</small></button>
     </div>
   </div>
 
