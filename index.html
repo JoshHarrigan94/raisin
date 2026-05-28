@@ -1,12 +1,1341 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Raisin Best Friends</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Raisin Best Friends</title>
+
+  <style>
+    :root {
+      --bg: #120d0b;
+      --panel: rgba(255, 248, 235, 0.12);
+      --panel-strong: rgba(255, 248, 235, 0.2);
+      --text: #fff4df;
+      --muted: #d6bfa2;
+      --accent: #d9965b;
+      --accent-2: #8f5b37;
+      --good: #ffd88a;
+      --shadow: rgba(0, 0, 0, 0.45);
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: radial-gradient(circle at top, #2b1b14 0%, #120d0b 55%, #070504 100%);
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+    }
+
+    #app {
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      touch-action: none;
+    }
+
+    .hud {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    .top-card {
+      position: absolute;
+      top: 18px;
+      left: 18px;
+      right: 18px;
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    .brand {
+      max-width: 260px;
+      padding: 14px 16px;
+      border-radius: 22px;
+      background: linear-gradient(145deg, rgba(255,255,255,0.15), rgba(255,255,255,0.06));
+      border: 1px solid rgba(255,255,255,0.16);
+      box-shadow: 0 18px 50px var(--shadow);
+      backdrop-filter: blur(16px);
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 18px;
+      letter-spacing: -0.03em;
+    }
+
+    .brand p {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .mood-card {
+      width: 158px;
+      padding: 14px;
+      border-radius: 22px;
+      background: var(--panel);
+      border: 1px solid rgba(255,255,255,0.14);
+      backdrop-filter: blur(16px);
+      box-shadow: 0 18px 50px var(--shadow);
+    }
+
+    .mood-title {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .meter {
+      height: 8px;
+      width: 100%;
+      border-radius: 99px;
+      background: rgba(255,255,255,0.14);
+      overflow: hidden;
+      margin-bottom: 9px;
+    }
+
+    .meter span {
+      display: block;
+      height: 100%;
+      width: 65%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #d9965b, #ffd88a);
+    }
+
+    .status-text {
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .bottom-controls {
+      position: absolute;
+      left: 50%;
+      bottom: 22px;
+      transform: translateX(-50%);
+      display: grid;
+      grid-template-columns: repeat(4, 72px);
+      gap: 10px;
+      pointer-events: auto;
+    }
+
+    .control-btn {
+      height: 68px;
+      border: 1px solid rgba(255,255,255,0.16);
+      border-radius: 24px;
+      background: linear-gradient(145deg, rgba(255,255,255,0.16), rgba(255,255,255,0.07));
+      color: var(--text);
+      box-shadow: 0 16px 40px rgba(0,0,0,0.3);
+      backdrop-filter: blur(14px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .control-btn span {
+      font-size: 22px;
+      margin-bottom: 3px;
+    }
+
+    .control-btn small {
+      font-size: 10px;
+      color: var(--muted);
+    }
+
+    .control-btn:active {
+      transform: translateY(2px) scale(0.98);
+      background: var(--panel-strong);
+    }
+
+    .hint {
+      position: absolute;
+      left: 50%;
+      bottom: 104px;
+      transform: translateX(-50%);
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: rgba(0,0,0,0.22);
+      border: 1px solid rgba(255,255,255,0.12);
+      color: var(--muted);
+      font-size: 12px;
+      backdrop-filter: blur(12px);
+      white-space: nowrap;
+    }
+
+    .debug {
+      position: absolute;
+      right: 18px;
+      top: 132px;
+      width: 180px;
+      padding: 12px;
+      border-radius: 18px;
+      background: rgba(0,0,0,0.2);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: rgba(255,255,255,0.72);
+      font-size: 11px;
+      line-height: 1.5;
+      backdrop-filter: blur(12px);
+      display: none;
+    }
+
+    @media (max-width: 640px) {
+      .top-card {
+        top: 12px;
+        left: 12px;
+        right: 12px;
+      }
+
+      .brand {
+        max-width: 190px;
+        padding: 12px;
+      }
+
+      .brand h1 {
+        font-size: 15px;
+      }
+
+      .mood-card {
+        width: 132px;
+        padding: 12px;
+      }
+
+      .bottom-controls {
+        grid-template-columns: repeat(4, 64px);
+        bottom: 16px;
+        gap: 8px;
+      }
+
+      .control-btn {
+        width: 64px;
+        height: 62px;
+        border-radius: 20px;
+      }
+
+      .debug {
+        display: none;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div id="app"></div>
+
+  <div class="hud">
+    <div class="top-card">
+      <div class="brand">
+        <h1>Raisin Best Friends</h1>
+        <p>Pet her, give treats, play gently, and build your bond.</p>
+      </div>
+
+      <div class="mood-card">
+        <div class="mood-title">Bond with Raisin</div>
+        <div class="meter"><span id="bondMeter"></span></div>
+        <div class="status-text" id="statusText">Curious</div>
+      </div>
+    </div>
+
+    <div class="debug" id="debugPanel"></div>
+
+    <div class="hint" id="hintText">Drag over Raisin to pet her</div>
+
+    <div class="bottom-controls">
+      <button class="control-btn" id="treatBtn"><span>🦴</span><small>Treat</small></button>
+      <button class="control-btn" id="toyBtn"><span>🎾</span><small>Toy</small></button>
+      <button class="control-btn" id="callBtn"><span>💬</span><small>Call</small></button>
+      <button class="control-btn" id="napBtn"><span>🌙</span><small>Nap</small></button>
+    </div>
+  </div>
+
+  <script type="module">
+    import * as THREE from "https://esm.sh/three@0.167.1";
+    import { OrbitControls } from "https://esm.sh/three@0.167.1/examples/jsm/controls/OrbitControls.js";
+
+    /************************************************************
+     * 01. CONFIG
+     ************************************************************/
+
+    const CONFIG = {
+      scene: {
+        backgroundTop: 0x2b1b14,
+        backgroundBottom: 0x070504,
+        fogColor: 0x120d0b,
+        fogNear: 6,
+        fogFar: 18
+      },
+
+      raisin: {
+        name: "Raisin",
+        coatDark: 0x2a1510,
+        coatMid: 0x4b261a,
+        tan: 0xc7834d,
+        amberEye: 0xd89442,
+        nose: 0x11100f,
+        chest: 0x6a3824
+      },
+
+      interaction: {
+        petDistance: 1.1,
+        affectionGain: 0.18,
+        treatGain: 8,
+        toyGain: 6,
+        callGain: 3
+      }
+    };
+
+    /************************************************************
+     * 02. RAISIN PROFILE
+     ************************************************************/
+
+    const RaisinProfile = {
+      identity: {
+        breed: "Cocker Spaniel",
+        personality: ["curious", "soft", "playful", "expressive", "food motivated"],
+        signatureFeatures: [
+          "large amber eyes",
+          "tan eyebrows",
+          "deep chocolate coat",
+          "long feathered ears",
+          "soft muzzle",
+          "gentle human-like expression"
+        ]
+      },
+
+      reactions: {
+        petHead: ["eyes-soft", "tail-wag", "lean-forward"],
+        treat: ["alert", "sit", "happy-mouth"],
+        toy: ["play-bow", "ears-bounce", "tail-fast"],
+        call: ["head-tilt", "eye-contact"],
+        nap: ["sleepy-blink", "settle"]
+      }
+    };
+
+    /************************************************************
+     * 03. APP STATE
+     ************************************************************/
+
+    const State = {
+      bond: 35,
+      affection: 45,
+      energy: 62,
+      hunger: 40,
+      mood: "Curious",
+      currentAction: "idle",
+      isPointerDown: false,
+      pointer: new THREE.Vector2(),
+      pointerWorld: new THREE.Vector3(),
+      lastPetTime: 0,
+      debug: false
+    };
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function setMood(mood) {
+      State.mood = mood;
+      document.getElementById("statusText").textContent = mood;
+    }
+
+    function addBond(amount) {
+      State.bond = clamp(State.bond + amount, 0, 100);
+      document.getElementById("bondMeter").style.width = `${State.bond}%`;
+    }
+
+    function setHint(text) {
+      document.getElementById("hintText").textContent = text;
+    }
+
+    /************************************************************
+     * 04. THREE CORE
+     ************************************************************/
+
+    const app = document.getElementById("app");
+
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.Fog(CONFIG.scene.fogColor, CONFIG.scene.fogNear, CONFIG.scene.fogFar);
+
+    const camera = new THREE.PerspectiveCamera(
+      42,
+      window.innerWidth / window.innerHeight,
+      0.1,
+      100
+    );
+    camera.position.set(0, 2.3, 6.2);
+
+    const renderer = new THREE.WebGLRenderer({
+      antialias: true,
+      alpha: false,
+      powerPreference: "high-performance"
+    });
+
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.1;
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+    app.appendChild(renderer.domElement);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.target.set(0, 1.05, 0);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.06;
+    controls.enablePan = false;
+    controls.minDistance = 3.4;
+    controls.maxDistance = 8;
+    controls.maxPolarAngle = Math.PI * 0.48;
+
+    /************************************************************
+     * 05. MATERIALS
+     ************************************************************/
+
+    const Materials = {
+      coatDark: new THREE.MeshStandardMaterial({
+        color: CONFIG.raisin.coatDark,
+        roughness: 0.72,
+        metalness: 0.02
+      }),
+
+      coatMid: new THREE.MeshStandardMaterial({
+        color: CONFIG.raisin.coatMid,
+        roughness: 0.68,
+        metalness: 0.02
+      }),
+
+      tan: new THREE.MeshStandardMaterial({
+        color: CONFIG.raisin.tan,
+        roughness: 0.7,
+        metalness: 0.01
+      }),
+
+      eye: new THREE.MeshPhysicalMaterial({
+        color: CONFIG.raisin.amberEye,
+        roughness: 0.12,
+        metalness: 0,
+        clearcoat: 1,
+        clearcoatRoughness: 0.05
+      }),
+
+      pupil: new THREE.MeshBasicMaterial({
+        color: 0x080604
+      }),
+
+      nose: new THREE.MeshPhysicalMaterial({
+        color: CONFIG.raisin.nose,
+        roughness: 0.22,
+        metalness: 0,
+        clearcoat: 0.85,
+        clearcoatRoughness: 0.12
+      }),
+
+      roomFloor: new THREE.MeshStandardMaterial({
+        color: 0x4b2d1f,
+        roughness: 0.85
+      }),
+
+      rug: new THREE.MeshStandardMaterial({
+        color: 0x8a5433,
+        roughness: 0.9
+      }),
+
+      toy: new THREE.MeshStandardMaterial({
+        color: 0xe7b34c,
+        roughness: 0.5
+      }),
+
+      treat: new THREE.MeshStandardMaterial({
+  color: 0xb87835,
+  roughness: 0.6
+}),
+
+chest: new THREE.MeshStandardMaterial({
+  color: 0x6a3824,
+  roughness: 0.78,
+  metalness: 0.01
+})
+    };
+
+    /************************************************************
+     * 06. LIGHTING
+     ************************************************************/
+
+    function createLighting() {
+      const ambient = new THREE.HemisphereLight(0xffe2bd, 0x1b0e08, 1.3);
+      scene.add(ambient);
+
+      const key = new THREE.DirectionalLight(0xffc58a, 3.2);
+      key.position.set(4, 6, 5);
+      key.castShadow = true;
+      key.shadow.mapSize.width = 2048;
+      key.shadow.mapSize.height = 2048;
+      key.shadow.camera.near = 0.5;
+      key.shadow.camera.far = 20;
+      key.shadow.camera.left = -6;
+      key.shadow.camera.right = 6;
+      key.shadow.camera.top = 6;
+      key.shadow.camera.bottom = -6;
+      scene.add(key);
+
+      const rim = new THREE.PointLight(0x9bbcff, 1.2, 8);
+      rim.position.set(-3, 2.5, -3);
+      scene.add(rim);
+
+      const lamp = new THREE.PointLight(0xffa55f, 2.6, 7);
+      lamp.position.set(2.6, 1.5, 1.8);
+      scene.add(lamp);
+    }
+
+    createLighting();
+
+    /************************************************************
+     * 07. ENVIRONMENT
+     ************************************************************/
+
+    function createEnvironment() {
+      const floor = new THREE.Mesh(
+        new THREE.PlaneGeometry(18, 18),
+        Materials.roomFloor
+      );
+      floor.rotation.x = -Math.PI / 2;
+      floor.receiveShadow = true;
+      scene.add(floor);
+
+      const rug = new THREE.Mesh(
+        new THREE.CircleGeometry(2.35, 80),
+        Materials.rug
+      );
+      rug.rotation.x = -Math.PI / 2;
+      rug.position.y = 0.012;
+      rug.receiveShadow = true;
+      scene.add(rug);
+
+      const backWall = new THREE.Mesh(
+        new THREE.PlaneGeometry(18, 8),
+        new THREE.MeshStandardMaterial({
+          color: 0x24130d,
+          roughness: 0.9
+        })
+      );
+      backWall.position.set(0, 4, -5);
+      backWall.receiveShadow = true;
+      scene.add(backWall);
+
+      const lampStand = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.035, 0.035, 1.4, 16),
+        new THREE.MeshStandardMaterial({ color: 0x2a1a12, roughness: 0.5 })
+      );
+      lampStand.position.set(2.7, 0.7, 1.8);
+      scene.add(lampStand);
+
+      const lampShade = new THREE.Mesh(
+        new THREE.ConeGeometry(0.35, 0.45, 32, 1, true),
+        new THREE.MeshStandardMaterial({
+          color: 0xe0a36b,
+          roughness: 0.7,
+          emissive: 0x5a2c12,
+          emissiveIntensity: 0.35
+        })
+      );
+      lampShade.position.set(2.7, 1.5, 1.8);
+      scene.add(lampShade);
+    }
+
+    createEnvironment();
+
+    /************************************************************
+ * 08. PROCEDURAL RAISIN MODEL
+ ************************************************************/
+
+const Raisin = {
+  root: new THREE.Group(),
+  body: null,
+  ribcage: null,
+  haunches: null,
+  neck: null,
+  head: null,
+  crown: null,
+  muzzle: null,
+  nose: null,
+  leftEye: null,
+  rightEye: null,
+  leftPupil: null,
+  rightPupil: null,
+  leftEyeShine: null,
+  rightEyeShine: null,
+  leftEar: null,
+  rightEar: null,
+  tail: null,
+  chest: null,
+  parts: [],
+  gestureZones: []
+};
+
+function makeSphere(name, sx, sy, sz, material, position, segments = 48) {
+  const mesh = new THREE.Mesh(
+    new THREE.SphereGeometry(1, segments, Math.max(20, segments / 1.5)),
+    material
+  );
+  mesh.name = name;
+  mesh.scale.set(sx, sy, sz);
+  mesh.position.copy(position);
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  return mesh;
+}
+
+function makeCapsule(name, radius, length, material, position, rotation = new THREE.Euler()) {
+  const mesh = new THREE.Mesh(
+    new THREE.CapsuleGeometry(radius, length, 12, 24),
+    material
+  );
+  mesh.name = name;
+  mesh.position.copy(position);
+  mesh.rotation.copy(rotation);
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  return mesh;
+}
+
+function makeFeatherTuft(name, material, position, scale, rotationZ = 0) {
+  const tuft = new THREE.Mesh(
+    new THREE.ConeGeometry(0.16, 0.48, 18),
+    material
+  );
+  tuft.name = name;
+  tuft.position.copy(position);
+  tuft.scale.copy(scale);
+  tuft.rotation.z = rotationZ;
+  tuft.rotation.x = Math.PI;
+  tuft.castShadow = true;
+  tuft.receiveShadow = true;
+  return tuft;
+}
+
+function makeCockerEar(name, side) {
+  const group = new THREE.Group();
+  group.name = name;
+
+  const upper = makeSphere(
+    `${name}-upper-soft-fold`,
+    0.22,
+    0.4,
+    0.12,
+    Materials.coatDark,
+    new THREE.Vector3(0, -0.06, 0),
+    40
+  );
+
+  const middle = makeSphere(
+    `${name}-middle-feather`,
+    0.2,
+    0.56,
+    0.105,
+    Materials.coatMid,
+    new THREE.Vector3(0.015 * side, -0.48, 0.025),
+    40
+  );
+
+  const lower = makeSphere(
+    `${name}-lower-feather`,
+    0.17,
+    0.42,
+    0.085,
+    Materials.coatMid,
+    new THREE.Vector3(0.025 * side, -0.9, 0.035),
+    36
+  );
+
+  const outerFeather1 = makeFeatherTuft(
+    `${name}-outer-feather-1`,
+    Materials.coatMid,
+    new THREE.Vector3(-0.08 * side, -0.65, 0.035),
+    new THREE.Vector3(0.7, 1.1, 0.38),
+    0.22 * side
+  );
+
+  const outerFeather2 = makeFeatherTuft(
+    `${name}-outer-feather-2`,
+    Materials.coatDark,
+    new THREE.Vector3(0.08 * side, -0.78, 0.025),
+    new THREE.Vector3(0.52, 0.92, 0.32),
+    -0.18 * side
+  );
+
+  group.add(upper, middle, lower, outerFeather1, outerFeather2);
+  group.position.set(side * 0.54, 1.75, 0.04);
+  group.rotation.z = side * 0.2;
+  group.rotation.x = -0.08;
+  group.rotation.y = side * 0.05;
+
+  return group;
+}
+
+function createRaisin() {
+  Raisin.root.position.set(0, 0.34, 0);
+  Raisin.root.rotation.y = 0;
+  scene.add(Raisin.root);
+
+  /**
+   * Body shape:
+   * Cocker spaniel puppy proportions:
+   * - longer body than tall
+   * - soft rounded ribcage
+   * - slightly tucked front
+   * - bigger head-to-body ratio for puppy appeal
+   */
+
+  Raisin.body = makeSphere(
+    "body-long-chocolate-coat",
+    0.72,
+    0.5,
+    1.18,
+    Materials.coatDark,
+    new THREE.Vector3(0, 0.62, -0.02)
+  );
+
+  Raisin.ribcage = makeSphere(
+    "front-ribcage-soft",
+    0.62,
+    0.48,
+    0.68,
+    Materials.coatDark,
+    new THREE.Vector3(0, 0.7, 0.52)
+  );
+
+  Raisin.haunches = makeSphere(
+    "rounded-haunches",
+    0.68,
+    0.5,
+    0.56,
+    Materials.coatDark,
+    new THREE.Vector3(0, 0.63, -0.82)
+  );
+
+  Raisin.neck = makeSphere(
+    "soft-neck-ruff",
+    0.34,
+    0.32,
+    0.34,
+    Materials.coatMid,
+    new THREE.Vector3(0, 1.14, 0.6)
+  );
+
+  Raisin.chest = makeSphere(
+    "warm-chest-feathering",
+    0.38,
+    0.42,
+    0.18,
+    Materials.chest || Materials.coatMid,
+    new THREE.Vector3(0, 0.79, 1.03)
+  );
+
+  const chestTufts = [
+    [-0.18, 0.62, 1.1, -0.22],
+    [0, 0.58, 1.13, 0],
+    [0.18, 0.62, 1.1, 0.22]
+  ].map(([x, y, z, rz], index) => makeFeatherTuft(
+    `chest-feather-${index + 1}`,
+    Materials.coatMid,
+    new THREE.Vector3(x, y, z),
+    new THREE.Vector3(0.55, 0.72, 0.35),
+    rz
+  ));
+
+  /**
+   * Head:
+   * Raisin has a very expressive face: soft forehead,
+   * amber eyes, tan brows, rounded muzzle.
+   */
+
+  Raisin.head = makeSphere(
+    "rounded-puppy-head",
+    0.56,
+    0.51,
+    0.48,
+    Materials.coatDark,
+    new THREE.Vector3(0, 1.56, 0.82)
+  );
+
+  Raisin.crown = makeSphere(
+    "soft-crown-top",
+    0.46,
+    0.31,
+    0.4,
+    Materials.coatDark,
+    new THREE.Vector3(0, 1.82, 0.72)
+  );
+
+  Raisin.muzzle = makeSphere(
+    "soft-tan-muzzle",
+    0.34,
+    0.22,
+    0.31,
+    Materials.tan,
+    new THREE.Vector3(0, 1.42, 1.16)
+  );
+
+  const muzzleBridge = makeSphere(
+    "muzzle-bridge-chocolate",
+    0.2,
+    0.14,
+    0.18,
+    Materials.coatDark,
+    new THREE.Vector3(0, 1.56, 1.09),
+    36
+  );
+
+  const chin = makeSphere(
+    "soft-chin",
+    0.22,
+    0.11,
+    0.18,
+    Materials.tan,
+    new THREE.Vector3(0, 1.31, 1.11),
+    32
+  );
+
+  Raisin.nose = makeSphere(
+    "wet-button-nose",
+    0.115,
+    0.075,
+    0.075,
+    Materials.nose,
+    new THREE.Vector3(0, 1.48, 1.42),
+    36
+  );
+
+  /**
+   * Eyes:
+   * Amber eyes are the emotional centre.
+   */
+
+  Raisin.leftEye = makeSphere(
+    "left-large-amber-eye",
+    0.087,
+    0.104,
+    0.058,
+    Materials.eye,
+    new THREE.Vector3(-0.205, 1.675, 1.15),
+    40
+  );
+
+  Raisin.rightEye = makeSphere(
+    "right-large-amber-eye",
+    0.087,
+    0.104,
+    0.058,
+    Materials.eye,
+    new THREE.Vector3(0.205, 1.675, 1.15),
+    40
+  );
+
+  Raisin.leftPupil = makeSphere(
+    "left-soft-pupil",
+    0.031,
+    0.042,
+    0.012,
+    Materials.pupil,
+    new THREE.Vector3(-0.205, 1.675, 1.207),
+    24
+  );
+
+  Raisin.rightPupil = makeSphere(
+    "right-soft-pupil",
+    0.031,
+    0.042,
+    0.012,
+    Materials.pupil,
+    new THREE.Vector3(0.205, 1.675, 1.207),
+    24
+  );
+
+  const shineMat = new THREE.MeshBasicMaterial({
+    color: 0xffffff,
+    transparent: true,
+    opacity: 0.85
+  });
+
+  Raisin.leftEyeShine = makeSphere(
+    "left-eye-catchlight",
+    0.018,
+    0.023,
+    0.006,
+    shineMat,
+    new THREE.Vector3(-0.232, 1.707, 1.25),
+    18
+  );
+
+  Raisin.rightEyeShine = makeSphere(
+    "right-eye-catchlight",
+    0.018,
+    0.023,
+    0.006,
+    shineMat,
+    new THREE.Vector3(0.178, 1.707, 1.25),
+    18
+  );
+
+  /**
+   * Tan markings:
+   * Her eyebrow dots are a signature feature.
+   */
+
+  const leftBrow = makeSphere(
+    "left-tan-eyebrow-dot",
+    0.105,
+    0.04,
+    0.027,
+    Materials.tan,
+    new THREE.Vector3(-0.235, 1.825, 1.08),
+    32
+  );
+
+  const rightBrow = makeSphere(
+    "right-tan-eyebrow-dot",
+    0.105,
+    0.04,
+    0.027,
+    Materials.tan,
+    new THREE.Vector3(0.235, 1.825, 1.08),
+    32
+  );
+
+  leftBrow.rotation.z = -0.18;
+  rightBrow.rotation.z = 0.18;
+
+  const leftCheek = makeSphere(
+    "left-warm-cheek",
+    0.13,
+    0.075,
+    0.055,
+    Materials.tan,
+    new THREE.Vector3(-0.29, 1.45, 1.15),
+    28
+  );
+
+  const rightCheek = makeSphere(
+    "right-warm-cheek",
+    0.13,
+    0.075,
+    0.055,
+    Materials.tan,
+    new THREE.Vector3(0.29, 1.45, 1.15),
+    28
+  );
+
+  /**
+   * Ears:
+   * Long, feathered cocker ears.
+   */
+
+  Raisin.leftEar = makeCockerEar("left-long-feathered-ear", -1);
+  Raisin.rightEar = makeCockerEar("right-long-feathered-ear", 1);
+
+  /**
+   * Tail:
+   * Soft happy tail carried behind.
+   */
+
+  Raisin.tail = makeCapsule(
+    "happy-feathered-tail",
+    0.075,
+    0.72,
+    Materials.coatDark,
+    new THREE.Vector3(0, 0.86, -1.32),
+    new THREE.Euler(1.12, 0, 0)
+  );
+
+  const tailFeather = makeCapsule(
+    "tail-feather-highlight",
+    0.035,
+    0.62,
+    Materials.coatMid,
+    new THREE.Vector3(0, 0.84, -1.35),
+    new THREE.Euler(1.12, 0.05, 0)
+  );
+
+  /**
+   * Legs and paws:
+   * Compact puppy feet, soft spaniel stance.
+   */
+
+  const legData = [
+    ["front-left-leg", -0.38, 0.22, 0.64, -0.04],
+    ["front-right-leg", 0.38, 0.22, 0.64, 0.04],
+    ["rear-left-leg", -0.42, 0.22, -0.68, 0.02],
+    ["rear-right-leg", 0.42, 0.22, -0.68, -0.02]
+  ];
+
+  legData.forEach(([name, x, y, z, rz]) => {
+    const leg = makeCapsule(
+      name,
+      0.105,
+      0.44,
+      Materials.coatDark,
+      new THREE.Vector3(x, y, z),
+      new THREE.Euler(0, 0, rz)
+    );
+
+    const paw = makeSphere(
+      `${name}-rounded-paw`,
+      0.16,
+      0.08,
+      0.2,
+      Materials.coatMid,
+      new THREE.Vector3(x, -0.02, z + 0.05),
+      28
+    );
+
+    Raisin.root.add(leg, paw);
+    Raisin.parts.push(leg, paw);
+  });
+
+  Raisin.root.add(
+    Raisin.body,
+    Raisin.ribcage,
+    Raisin.haunches,
+    Raisin.neck,
+    Raisin.chest,
+    ...chestTufts,
+    Raisin.head,
+    Raisin.crown,
+    Raisin.muzzle,
+    muzzleBridge,
+    chin,
+    Raisin.nose,
+    Raisin.leftEye,
+    Raisin.rightEye,
+    Raisin.leftPupil,
+    Raisin.rightPupil,
+    Raisin.leftEyeShine,
+    Raisin.rightEyeShine,
+    leftBrow,
+    rightBrow,
+    leftCheek,
+    rightCheek,
+    Raisin.leftEar,
+    Raisin.rightEar,
+    Raisin.tail,
+    tailFeather
+  );
+
+  Raisin.parts.push(
+    Raisin.body,
+    Raisin.ribcage,
+    Raisin.haunches,
+    Raisin.neck,
+    Raisin.chest,
+    ...chestTufts,
+    Raisin.head,
+    Raisin.crown,
+    Raisin.muzzle,
+    muzzleBridge,
+    chin,
+    Raisin.nose,
+    Raisin.leftEye,
+    Raisin.rightEye,
+    Raisin.leftPupil,
+    Raisin.rightPupil,
+    Raisin.leftEyeShine,
+    Raisin.rightEyeShine,
+    leftBrow,
+    rightBrow,
+    leftCheek,
+    rightCheek,
+    Raisin.tail,
+    tailFeather
+  );
+
+  Raisin.gestureZones = [
+    Raisin.head,
+    Raisin.crown,
+    Raisin.muzzle,
+    Raisin.body,
+    Raisin.ribcage,
+    Raisin.chest,
+    Raisin.leftEar.children[1],
+    Raisin.rightEar.children[1]
+  ];
+}
+
+createRaisin();
+
+    /************************************************************
+     * 09. TOYS AND TREATS PLACEHOLDERS
+     ************************************************************/
+
+    const ToySystem = {
+      ball: null,
+      treat: null,
+      activeToy: false,
+
+      create() {
+        this.ball = new THREE.Mesh(
+          new THREE.SphereGeometry(0.16, 32, 20),
+          Materials.toy
+        );
+        this.ball.position.set(-1.35, 0.2, 1.2);
+        this.ball.castShadow = true;
+        scene.add(this.ball);
+
+        this.treat = new THREE.Mesh(
+          new THREE.BoxGeometry(0.18, 0.08, 0.12),
+          Materials.treat
+        );
+        this.treat.position.set(1.35, 0.15, 1.2);
+        this.treat.rotation.y = 0.4;
+        this.treat.castShadow = true;
+        scene.add(this.treat);
+      },
+
+      tossToy() {
+        this.activeToy = true;
+        State.currentAction = "toy";
+        setMood("Playful");
+        setHint("Raisin wants to play");
+        addBond(CONFIG.interaction.toyGain);
+      },
+
+      giveTreat() {
+        State.currentAction = "treat";
+        setMood("Very Interested");
+        setHint("Treat detected. Maximum focus.");
+        addBond(CONFIG.interaction.treatGain);
+      }
+    };
+
+    ToySystem.create();
+
+    /************************************************************
+     * 10. GESTURE AND PETTING SYSTEM
+     ************************************************************/
+
+    const raycaster = new THREE.Raycaster();
+    const pointerPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), -0.9);
+
+    function updatePointer(event) {
+      const rect = renderer.domElement.getBoundingClientRect();
+      const x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      const y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+      State.pointer.set(x, y);
+      raycaster.setFromCamera(State.pointer, camera);
+      raycaster.ray.intersectPlane(pointerPlane, State.pointerWorld);
+    }
+
+    function petRaisin() {
+      const now = performance.now();
+      if (now - State.lastPetTime < 140) return;
+
+      raycaster.setFromCamera(State.pointer, camera);
+      const hits = raycaster.intersectObjects(Raisin.gestureZones, false);
+
+      if (hits.length > 0) {
+        State.lastPetTime = now;
+        State.currentAction = "pet";
+        setMood("Happy");
+        setHint("She likes that");
+        addBond(CONFIG.interaction.affectionGain);
+      }
+    }
+
+    function onPointerDown(event) {
+      State.isPointerDown = true;
+      updatePointer(event);
+      petRaisin();
+    }
+
+    function onPointerMove(event) {
+      updatePointer(event);
+      if (State.isPointerDown) petRaisin();
+    }
+
+    function onPointerUp() {
+      State.isPointerDown = false;
+      if (State.currentAction === "pet") {
+        State.currentAction = "idle";
+        setMood("Content");
+      }
+    }
+
+    renderer.domElement.addEventListener("pointerdown", onPointerDown);
+    renderer.domElement.addEventListener("pointermove", onPointerMove);
+    window.addEventListener("pointerup", onPointerUp);
+
+    /************************************************************
+     * 11. BUTTON ACTIONS
+     ************************************************************/
+
+    document.getElementById("treatBtn").addEventListener("click", () => {
+      ToySystem.giveTreat();
+    });
+
+    document.getElementById("toyBtn").addEventListener("click", () => {
+      ToySystem.tossToy();
+    });
+
+    document.getElementById("callBtn").addEventListener("click", () => {
+      State.currentAction = "call";
+      setMood("Listening");
+      setHint("Raisin heard you");
+      addBond(CONFIG.interaction.callGain);
+    });
+
+    document.getElementById("napBtn").addEventListener("click", () => {
+      State.currentAction = "nap";
+      setMood("Sleepy");
+      setHint("She is settling down");
+      State.energy = clamp(State.energy + 8, 0, 100);
+    });
+
+    /************************************************************
+     * 12. ANIMATION SYSTEM
+     ************************************************************/
+
+    const clock = new THREE.Clock();
+
+    function animateRaisin(time, delta) {
+      const t = time;
+
+      const breathing = Math.sin(t * 2.1) * 0.018;
+      const softBob = Math.sin(t * 1.2) * 0.025;
+
+      Raisin.body.scale.y = 0.55 + breathing;
+      Raisin.chest.scale.y = 0.34 + breathing * 1.8;
+      Raisin.head.position.y = 1.54 + softBob;
+
+      const baseTailSpeed =
+        State.currentAction === "toy" ? 12 :
+        State.currentAction === "treat" ? 8 :
+        State.currentAction === "pet" ? 10 :
+        State.mood === "Sleepy" ? 1.2 :
+        4;
+
+      const tailAmp =
+        State.currentAction === "toy" ? 0.55 :
+        State.currentAction === "pet" ? 0.38 :
+        State.mood === "Sleepy" ? 0.08 :
+        0.22;
+
+      Raisin.tail.rotation.z = Math.sin(t * baseTailSpeed) * tailAmp;
+      Raisin.tail.rotation.y = Math.cos(t * baseTailSpeed * 0.5) * tailAmp * 0.25;
+
+      const earBounce =
+        State.currentAction === "toy" ? Math.sin(t * 9) * 0.08 :
+        State.currentAction === "call" ? Math.sin(t * 4) * 0.035 :
+        Math.sin(t * 1.7) * 0.015;
+
+      Raisin.leftEar.rotation.z = -0.22 + earBounce;
+      Raisin.rightEar.rotation.z = 0.22 - earBounce;
+
+      const headInterest =
+        State.currentAction === "call" ? Math.sin(t * 2.5) * 0.22 :
+        State.currentAction === "treat" ? 0.08 :
+        State.currentAction === "toy" ? Math.sin(t * 4) * 0.12 :
+        Math.sin(t * 0.9) * 0.045;
+
+      Raisin.head.rotation.z = headInterest;
+      Raisin.muzzle.rotation.z = headInterest * 0.7;
+
+      const eyeScale =
+        State.currentAction === "nap" ? 0.42 :
+        State.currentAction === "treat" ? 1.12 :
+        1;
+
+      Raisin.leftEye.scale.y = 0.09 * eyeScale;
+      Raisin.rightEye.scale.y = 0.09 * eyeScale;
+
+      if (State.currentAction === "treat") {
+        ToySystem.treat.position.y = 0.15 + Math.sin(t * 10) * 0.035;
+      }
+
+      if (State.currentAction === "toy") {
+        ToySystem.ball.position.x = -1.35 + Math.sin(t * 4) * 0.28;
+        ToySystem.ball.position.y = 0.2 + Math.abs(Math.sin(t * 4)) * 0.18;
+        ToySystem.ball.rotation.z += delta * 4;
+      }
+    }
+
+    /************************************************************
+     * 13. DEBUG PANEL
+     ************************************************************/
+
+    function updateDebug() {
+      const panel = document.getElementById("debugPanel");
+      if (!State.debug) return;
+
+      panel.innerHTML = `
+        mood: ${State.mood}<br/>
+        action: ${State.currentAction}<br/>
+        bond: ${State.bond.toFixed(1)}<br/>
+        affection: ${State.affection}<br/>
+        energy: ${State.energy}<br/>
+        hunger: ${State.hunger}
+      `;
+    }
+
+    /************************************************************
+     * 14. MAIN LOOP
+     ************************************************************/
+
+    function tick() {
+      const elapsed = clock.getElapsedTime();
+      const delta = clock.getDelta();
+
+      controls.update();
+      animateRaisin(elapsed, delta);
+      updateDebug();
+
+      renderer.render(scene, camera);
+      requestAnimationFrame(tick);
+    }
+
+    tick();
+
+    /************************************************************
+     * 15. RESPONSIVE
+     ************************************************************/
+
+    function resize() {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    }
+
+    window.addEventListener("resize", resize);
+
+    /************************************************************
+     * 16. STARTUP
+     ************************************************************/
+
+    document.getElementById("bondMeter").style.width = `${State.bond}%`;
+    setMood("Curious");
+  </script>
+</body>
 </html>
