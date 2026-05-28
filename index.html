@@ -135,7 +135,7 @@
   bottom: max(18px, env(safe-area-inset-bottom));
   transform: translateX(-50%);
   display: grid;
-  grid-template-columns: repeat(6, 64px);
+  grid-template-columns: repeat(3, 70px);
   gap: 10px;
   pointer-events: auto;
 }
@@ -176,7 +176,7 @@
    .hint {
   position: absolute;
   left: 50%;
-  bottom: calc(max(18px, env(safe-area-inset-bottom)) + 84px);
+  bottom: calc(max(18px, env(safe-area-inset-bottom)) + 148px);
   transform: translateX(-50%);
   padding: 10px 14px;
   max-width: calc(100vw - 28px);
@@ -296,7 +296,7 @@
   }
 
   .bottom-controls {
-    grid-template-columns: repeat(6, 54px);
+    grid-template-columns: repeat(3, 62px);
     gap: 8px;
   }
 
@@ -325,7 +325,7 @@
   }
 
   .bottom-controls {
-    grid-template-columns: repeat(6, 49px);
+    grid-template-columns: repeat(3, 56px);
     gap: 7px;
   }
 
@@ -1711,6 +1711,7 @@ function petRaisin() {
 
 function onPointerDown(event) {
   State.isPointerDown = true;
+  controls.enabled = false;
   updatePointer(event);
   petRaisin();
 }
@@ -1722,12 +1723,18 @@ function onPointerMove(event) {
 
 function onPointerUp() {
   State.isPointerDown = false;
+  controls.enabled = true;
 }
 
 renderer.domElement.addEventListener("pointerdown", onPointerDown);
 renderer.domElement.addEventListener("pointermove", onPointerMove);
 window.addEventListener("pointerup", onPointerUp);
 
+document.querySelectorAll(".control-btn").forEach(button => {
+  button.addEventListener("pointerdown", event => {
+    event.stopPropagation();
+  });
+});
     /************************************************************
      * 11. BUTTON ACTIONS
      ************************************************************/
@@ -1784,7 +1791,9 @@ document.getElementById("photoBtn").addEventListener("click", () => {
     const link = document.createElement("a");
     link.download = "raisin-best-friends.png";
     link.href = renderer.domElement.toDataURL("image/png");
-    link.click();
+    document.body.appendChild(link);
+link.click();
+document.body.removeChild(link);
 
     hud.classList.remove("hidden-for-photo");
     setHint("Photo saved.");
@@ -1805,7 +1814,7 @@ document.getElementById("resetBtn").addEventListener("click", () => {
   document.getElementById("bondMeter").style.width = `${State.bond}%`;
 
   const title = document.querySelector(".mood-title");
-  if (title) title.textContent = "Getting to know you";
+  if (title) title.textContent = MoodEngine.describeBond();
 
   setMood("Curious");
   setHint("Fresh start. Raisin is ready.");
