@@ -1,0 +1,27 @@
+{
+  "name": "raisin-best-friends",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A cosy interactive 3D companion app for Raisin.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "deploy": "vite build"
+  },
+  "dependencies": {
+    "@react-three/drei": "^9.122.0",
+    "@react-three/fiber": "^8.17.10",
+    "gsap": "^3.12.5",
+    "leva": "^0.9.35",
+    "three": "^0.167.1",
+    "zustand": "^4.5.5",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.1",
+    "vite": "^5.4.2"
+  }
+}
