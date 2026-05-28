@@ -2097,10 +2097,17 @@ if (title) title.textContent = "Getting to know you";
 setMood("Curious");
 setHint("Touch and drag over Raisin to pet her.");
 
-setTimeout(() => {
+function hideLoadingScreen() {
   const loading = document.getElementById("loadingScreen");
   if (loading) loading.classList.add("hidden");
-}, 700);
+}
+
+hideLoadingScreen();
+
+window.addEventListener("error", (event) => {
+  console.error("Raisin app error:", event.error || event.message);
+  hideLoadingScreen();
+});
 
 setTimeout(() => {
   setHint("Try her ears, head, chest, treat, or toy.");
