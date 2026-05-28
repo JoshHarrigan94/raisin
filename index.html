@@ -1085,106 +1085,331 @@ function createRaisin() {
 createRaisin();
 
     /************************************************************
-     * 09. TOYS AND TREATS PLACEHOLDERS
-     ************************************************************/
+ * 09. TOYS AND TREATS SYSTEM
+ ************************************************************/
 
-    const ToySystem = {
-      ball: null,
-      treat: null,
-      activeToy: false,
+const ToySystem = {
+  ball: null,
+  treat: null,
+  activeToy: false,
+  toyExcitement: 0,
+  treatActive: false,
+  treatTimer: 0,
+  ballTarget: new THREE.Vector3(-1.35, 0.2, 1.2),
 
-      create() {
-        this.ball = new THREE.Mesh(
-          new THREE.SphereGeometry(0.16, 32, 20),
-          Materials.toy
-        );
-        this.ball.position.set(-1.35, 0.2, 1.2);
-        this.ball.castShadow = true;
-        scene.add(this.ball);
+  create() {
+    this.ball = new THREE.Mesh(
+      new THREE.SphereGeometry(0.16, 32, 20),
+      Materials.toy
+    );
+    this.ball.position.set(-1.35, 0.2, 1.2);
+    this.ball.castShadow = true;
+    scene.add(this.ball);
 
-        this.treat = new THREE.Mesh(
-          new THREE.BoxGeometry(0.18, 0.08, 0.12),
-          Materials.treat
-        );
-        this.treat.position.set(1.35, 0.15, 1.2);
-        this.treat.rotation.y = 0.4;
-        this.treat.castShadow = true;
-        scene.add(this.treat);
-      },
+    this.treat = new THREE.Mesh(
+      new THREE.BoxGeometry(0.18, 0.08, 0.12),
+      Materials.treat
+    );
+    this.treat.position.set(1.35, 0.15, 1.2);
+    this.treat.rotation.y = 0.4;
+    this.treat.castShadow = true;
+    scene.add(this.treat);
+  },
 
-      tossToy() {
-        this.activeToy = true;
-        State.currentAction = "toy";
-        setMood("Playful");
-        setHint("Raisin wants to play");
-        addBond(CONFIG.interaction.toyGain);
-      },
+  giveTreat() {
+    this.treatActive = true;
+    this.treatTimer = 2.8;
 
-      giveTreat() {
-        State.currentAction = "treat";
-        setMood("Very Interested");
-        setHint("Treat detected. Maximum focus.");
-        addBond(CONFIG.interaction.treatGain);
-      }
-    };
+    this.treat.visible = true;
+    this.treat.scale.set(1, 1, 1);
+    this.treat.position.set(1.25, 0.24, 1.25);
+    this.treat.rotation.set(0.2, 0.6, -0.15);
 
-    ToySystem.create();
+    State.currentAction = "anticipateTreat";
+    State.hunger = clamp(State.hunger - 8, 0, 100);
+
+    setMood("Treat Locked");
+    setHint("She has spotted the treat.");
+    addBond(CONFIG.interaction.treatGain);
+  },
+
+  tossToy() {
+    this.activeToy = true;
+    this.toyExcitement = 1;
+
+    this.ball.visible = true;
+    this.ball.position.set(-1.35, 0.22, 1.2);
+    this.ballTarget.set(
+      -0.9 + Math.random() * 1.8,
+      0.22,
+      0.75 + Math.random() * 0.7
+    );
+
+    State.currentAction = "playToy";
+    State.energy = clamp(State.energy - 6, 0, 100);
+
+    setMood("Play Bow");
+    setHint("Ball mode activated.");
+    addBond(CONFIG.interaction.toyGain);
+  },
+
+  updateTreat(time, delta) {
+    if (!this.treatActive) return;
+
+    this.treatTimer -= delta;
+
+    if (this.treatTimer > 1.2) {
+      State.currentAction = "anticipateTreat";
+      this.treat.position.y = 0.24 + Math.sin(time * 13) * 0.035;
+      this.treat.rotation.x += delta * 1.6;
+      this.treat.rotation.z += delta * 1.1;
+    }
+
+    if (this.treatTimer <= 1.2 && this.treatTimer > 0.35) {
+      State.currentAction = "eatTreat";
+
+      this.treat.position.x += (0.1 - this.treat.position.x) * 0.09;
+      this.treat.position.y += (0.58 - this.treat.position.y) * 0.09;
+      this.treat.position.z += (1.32 - this.treat.position.z) * 0.09;
+
+      this.treat.rotation.x += delta * 4;
+      this.treat.rotation.y += delta * 3;
+    }
+
+    if (this.treatTimer <= 0.35) {
+      const s = clamp(this.treatTimer / 0.35, 0, 1);
+      this.treat.scale.setScalar(s);
+      State.currentAction = "eatTreat";
+    }
+
+    if (this.treatTimer <= 0) {
+      this.treatActive = false;
+      this.treat.visible = false;
+      this.treat.scale.set(1, 1, 1);
+
+      State.currentAction = "idle";
+      setMood("Satisfied");
+      setHint("Crunch. Very successful treat.");
+    }
+  },
+
+  updateToy(time, delta) {
+    if (!this.activeToy) return;
+
+    this.toyExcitement = clamp(this.toyExcitement - delta * 0.08, 0, 1);
+
+    this.ball.position.x += (this.ballTarget.x - this.ball.position.x) * 0.035;
+    this.ball.position.z += (this.ballTarget.z - this.ball.position.z) * 0.035;
+
+    const bounce = Math.abs(Math.sin(time * 7)) * 0.16 * this.toyExcitement;
+    this.ball.position.y = 0.18 + bounce;
+
+    this.ball.rotation.x += delta * 5;
+    this.ball.rotation.z += delta * 7;
+
+    if (Math.random() < delta * 0.45) {
+      this.ballTarget.set(
+        -1.05 + Math.random() * 2.1,
+        0.22,
+        0.65 + Math.random() * 0.9
+      );
+    }
+
+    if (this.toyExcitement <= 0.05) {
+      this.activeToy = false;
+      State.currentAction = "idle";
+      setMood("Pleased");
+      setHint("She has settled after playing.");
+    }
+  },
+
+  update(time, delta) {
+    this.updateTreat(time, delta);
+    this.updateToy(time, delta);
+  }
+};
+
+ToySystem.create();
 
     /************************************************************
-     * 10. GESTURE AND PETTING SYSTEM
-     ************************************************************/
+ * 10. GESTURE AND PETTING SYSTEM
+ ************************************************************/
 
-    const raycaster = new THREE.Raycaster();
-    const pointerPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), -0.9);
+const raycaster = new THREE.Raycaster();
+const pointerPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), -0.9);
 
-    function updatePointer(event) {
-      const rect = renderer.domElement.getBoundingClientRect();
-      const x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-      const y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+const PettingSystem = {
+  activeZone: null,
+  petStreak: 0,
+  affectionBurst: 0,
+  leanAmount: 0,
+  lastZone: null,
+  lastPetTime: 0,
+  hearts: [],
 
-      State.pointer.set(x, y);
-      raycaster.setFromCamera(State.pointer, camera);
-      raycaster.ray.intersectPlane(pointerPlane, State.pointerWorld);
-    }
+  zoneMessages: {
+    head: "Head pats. Classic Raisin joy.",
+    ear: "Ear scratches. She melts.",
+    muzzle: "Tiny nose attention.",
+    chest: "Chest fuss. Big contentment.",
+    body: "Soft coat strokes."
+  },
 
-    function petRaisin() {
-      const now = performance.now();
-      if (now - State.lastPetTime < 140) return;
+  identifyZone(objectName) {
+    const name = objectName.toLowerCase();
 
-      raycaster.setFromCamera(State.pointer, camera);
-      const hits = raycaster.intersectObjects(Raisin.gestureZones, false);
+    if (name.includes("ear")) return "ear";
+    if (name.includes("muzzle") || name.includes("nose") || name.includes("chin")) return "muzzle";
+    if (name.includes("chest")) return "chest";
+    if (name.includes("head") || name.includes("crown") || name.includes("brow")) return "head";
+    if (name.includes("body") || name.includes("ribcage") || name.includes("haunches")) return "body";
 
-      if (hits.length > 0) {
-        State.lastPetTime = now;
-        State.currentAction = "pet";
-        setMood("Happy");
-        setHint("She likes that");
-        addBond(CONFIG.interaction.affectionGain);
+    return "body";
+  },
+
+  createHeart(position) {
+    const heart = new THREE.Group();
+
+    const mat = new THREE.MeshBasicMaterial({
+      color: 0xffb5a7,
+      transparent: true,
+      opacity: 0.9
+    });
+
+    const left = new THREE.Mesh(new THREE.SphereGeometry(0.035, 12, 8), mat);
+    const right = new THREE.Mesh(new THREE.SphereGeometry(0.035, 12, 8), mat);
+    const point = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.09, 12), mat);
+
+    left.position.set(-0.025, 0.025, 0);
+    right.position.set(0.025, 0.025, 0);
+    point.position.set(0, -0.025, 0);
+    point.rotation.z = Math.PI;
+
+    heart.add(left, right, point);
+    heart.position.copy(position);
+    heart.position.y += 0.18;
+    heart.scale.setScalar(1);
+    heart.userData.life = 1;
+    heart.userData.floatSpeed = 0.35 + Math.random() * 0.25;
+    heart.userData.drift = (Math.random() - 0.5) * 0.35;
+
+    scene.add(heart);
+    this.hearts.push(heart);
+  },
+
+  updateHearts(delta) {
+    for (let i = this.hearts.length - 1; i >= 0; i--) {
+      const heart = this.hearts[i];
+
+      heart.userData.life -= delta * 0.9;
+      heart.position.y += delta * heart.userData.floatSpeed;
+      heart.position.x += delta * heart.userData.drift;
+      heart.rotation.z += delta * 0.8;
+
+      const scale = clamp(heart.userData.life, 0, 1);
+      heart.scale.setScalar(0.6 + scale * 0.5);
+
+      heart.children.forEach(part => {
+        part.material.opacity = clamp(heart.userData.life, 0, 0.9);
+      });
+
+      if (heart.userData.life <= 0) {
+        scene.remove(heart);
+        this.hearts.splice(i, 1);
       }
     }
+  },
 
-    function onPointerDown(event) {
-      State.isPointerDown = true;
-      updatePointer(event);
-      petRaisin();
+  registerPet(hit) {
+    const now = performance.now();
+    if (now - this.lastPetTime < 110) return;
+
+    const zone = this.identifyZone(hit.object.name);
+    this.activeZone = zone;
+
+    if (zone === this.lastZone) {
+      this.petStreak += 1;
+    } else {
+      this.petStreak = 1;
     }
 
-    function onPointerMove(event) {
-      updatePointer(event);
-      if (State.isPointerDown) petRaisin();
-    }
+    this.lastZone = zone;
+    this.lastPetTime = now;
 
-    function onPointerUp() {
-      State.isPointerDown = false;
-      if (State.currentAction === "pet") {
+    State.currentAction = "pet";
+    State.affection = clamp(State.affection + 0.8, 0, 100);
+
+    const gain = CONFIG.interaction.affectionGain + Math.min(this.petStreak * 0.025, 0.25);
+    addBond(gain);
+
+    this.affectionBurst = clamp(this.affectionBurst + 0.16, 0, 1);
+    this.leanAmount = clamp(this.leanAmount + 0.12, 0, 1);
+
+    if (this.petStreak % 6 === 0) {
+      this.createHeart(hit.point);
+      setMood("Best Friends");
+      setHint("That is the spot.");
+      addBond(1.2);
+    } else {
+      setMood(zone === "ear" ? "Melting" : "Happy");
+      setHint(this.zoneMessages[zone] || "She likes that.");
+    }
+  },
+
+  decay(delta) {
+    this.affectionBurst += (0 - this.affectionBurst) * delta * 2.4;
+    this.leanAmount += (0 - this.leanAmount) * delta * 1.7;
+
+    if (!State.isPointerDown && State.currentAction === "pet") {
+      const timeSincePet = performance.now() - this.lastPetTime;
+
+      if (timeSincePet > 700) {
         State.currentAction = "idle";
-        setMood("Content");
+        this.activeZone = null;
+        this.petStreak = 0;
+        setMood(State.bond > 55 ? "Content" : "Curious");
       }
     }
+  }
+};
 
-    renderer.domElement.addEventListener("pointerdown", onPointerDown);
-    renderer.domElement.addEventListener("pointermove", onPointerMove);
-    window.addEventListener("pointerup", onPointerUp);
+function updatePointer(event) {
+  const rect = renderer.domElement.getBoundingClientRect();
+  const x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+  const y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+  State.pointer.set(x, y);
+  raycaster.setFromCamera(State.pointer, camera);
+  raycaster.ray.intersectPlane(pointerPlane, State.pointerWorld);
+}
+
+function petRaisin() {
+  raycaster.setFromCamera(State.pointer, camera);
+  const hits = raycaster.intersectObjects(Raisin.gestureZones, true);
+
+  if (hits.length > 0) {
+    PettingSystem.registerPet(hits[0]);
+  }
+}
+
+function onPointerDown(event) {
+  State.isPointerDown = true;
+  updatePointer(event);
+  petRaisin();
+}
+
+function onPointerMove(event) {
+  updatePointer(event);
+  if (State.isPointerDown) petRaisin();
+}
+
+function onPointerUp() {
+  State.isPointerDown = false;
+}
+
+renderer.domElement.addEventListener("pointerdown", onPointerDown);
+renderer.domElement.addEventListener("pointermove", onPointerMove);
+window.addEventListener("pointerup", onPointerUp);
 
     /************************************************************
      * 11. BUTTON ACTIONS
@@ -1213,72 +1438,211 @@ createRaisin();
     });
 
     /************************************************************
-     * 12. ANIMATION SYSTEM
-     ************************************************************/
+ * 12. ANIMATION SYSTEM
+ ************************************************************/
 
-    const clock = new THREE.Clock();
+const LifeSystem = {
+  blinkTimer: 0,
+  nextBlink: 2.5,
+  blinkAmount: 0,
+  sniffTimer: 0,
+  gazeTarget: new THREE.Vector3(0, 1.55, 2),
+  headLook: new THREE.Vector2(0, 0),
 
-    function animateRaisin(time, delta) {
-      const t = time;
+  randomBetween(min, max) {
+    return min + Math.random() * (max - min);
+  },
 
-      const breathing = Math.sin(t * 2.1) * 0.018;
-      const softBob = Math.sin(t * 1.2) * 0.025;
+  triggerBlink() {
+    this.blinkTimer = 0.18;
+    this.nextBlink = this.randomBetween(2.4, 6.5);
+  },
 
-      Raisin.body.scale.y = 0.55 + breathing;
-      Raisin.chest.scale.y = 0.34 + breathing * 1.8;
-      Raisin.head.position.y = 1.54 + softBob;
+  updateBlink(delta) {
+    this.nextBlink -= delta;
 
-      const baseTailSpeed =
-        State.currentAction === "toy" ? 12 :
-        State.currentAction === "treat" ? 8 :
-        State.currentAction === "pet" ? 10 :
-        State.mood === "Sleepy" ? 1.2 :
-        4;
-
-      const tailAmp =
-        State.currentAction === "toy" ? 0.55 :
-        State.currentAction === "pet" ? 0.38 :
-        State.mood === "Sleepy" ? 0.08 :
-        0.22;
-
-      Raisin.tail.rotation.z = Math.sin(t * baseTailSpeed) * tailAmp;
-      Raisin.tail.rotation.y = Math.cos(t * baseTailSpeed * 0.5) * tailAmp * 0.25;
-
-      const earBounce =
-        State.currentAction === "toy" ? Math.sin(t * 9) * 0.08 :
-        State.currentAction === "call" ? Math.sin(t * 4) * 0.035 :
-        Math.sin(t * 1.7) * 0.015;
-
-      Raisin.leftEar.rotation.z = -0.22 + earBounce;
-      Raisin.rightEar.rotation.z = 0.22 - earBounce;
-
-      const headInterest =
-        State.currentAction === "call" ? Math.sin(t * 2.5) * 0.22 :
-        State.currentAction === "treat" ? 0.08 :
-        State.currentAction === "toy" ? Math.sin(t * 4) * 0.12 :
-        Math.sin(t * 0.9) * 0.045;
-
-      Raisin.head.rotation.z = headInterest;
-      Raisin.muzzle.rotation.z = headInterest * 0.7;
-
-      const eyeScale =
-        State.currentAction === "nap" ? 0.42 :
-        State.currentAction === "treat" ? 1.12 :
-        1;
-
-      Raisin.leftEye.scale.y = 0.09 * eyeScale;
-      Raisin.rightEye.scale.y = 0.09 * eyeScale;
-
-      if (State.currentAction === "treat") {
-        ToySystem.treat.position.y = 0.15 + Math.sin(t * 10) * 0.035;
-      }
-
-      if (State.currentAction === "toy") {
-        ToySystem.ball.position.x = -1.35 + Math.sin(t * 4) * 0.28;
-        ToySystem.ball.position.y = 0.2 + Math.abs(Math.sin(t * 4)) * 0.18;
-        ToySystem.ball.rotation.z += delta * 4;
-      }
+    if (this.nextBlink <= 0 && this.blinkTimer <= 0) {
+      this.triggerBlink();
     }
+
+    if (this.blinkTimer > 0) {
+      this.blinkTimer -= delta;
+      const phase = 1 - Math.abs(this.blinkTimer / 0.18 - 0.5) * 2;
+      this.blinkAmount = clamp(phase, 0, 1);
+    } else {
+      this.blinkAmount = 0;
+    }
+  },
+
+  updateGaze(time) {
+    const targetX = State.pointer.x * 0.18;
+    const targetY = State.pointer.y * 0.12;
+
+    this.headLook.x += (targetX - this.headLook.x) * 0.04;
+    this.headLook.y += (targetY - this.headLook.y) * 0.04;
+
+    if (State.currentAction === "call") {
+      this.headLook.x += Math.sin(time * 2.2) * 0.004;
+      this.headLook.y += Math.sin(time * 1.4) * 0.003;
+    }
+  },
+
+  updateSniff(time, delta) {
+    this.sniffTimer -= delta;
+
+    if (this.sniffTimer <= 0) {
+      this.sniffTimer = this.randomBetween(4, 9);
+    }
+
+    return this.sniffTimer < 0.6 ? Math.sin(time * 32) * 0.012 : 0;
+  }
+};
+
+function animateRaisin(time, delta) {
+  LifeSystem.updateBlink(delta);
+  LifeSystem.updateGaze(time);
+  const sniff = LifeSystem.updateSniff(time, delta);
+
+  const breathing = Math.sin(time * 2.1) * 0.018;
+  const softBob = Math.sin(time * 1.2) * 0.025;
+  const microSway = Math.sin(time * 0.75) * 0.018;
+
+  Raisin.root.rotation.z = microSway * 0.25;
+
+  Raisin.body.scale.y = 0.5 + breathing;
+  if (Raisin.ribcage) Raisin.ribcage.scale.y = 0.48 + breathing * 1.3;
+  if (Raisin.haunches) Raisin.haunches.scale.y = 0.5 + breathing * 0.8;
+  if (Raisin.chest) Raisin.chest.scale.y = 0.42 + breathing * 1.8;
+
+  Raisin.head.position.y = 1.56 + softBob;
+  Raisin.crown.position.y = 1.82 + softBob * 0.9;
+  Raisin.muzzle.position.y = 1.42 + softBob * 0.75 + sniff;
+  Raisin.nose.position.y = 1.48 + softBob * 0.75 + sniff;
+
+  const headTilt =
+    State.currentAction === "call" ? Math.sin(time * 2.4) * 0.24 :
+    State.currentAction === "treat" ? 0.08 :
+    State.currentAction === "toy" ? Math.sin(time * 4) * 0.13 :
+    Math.sin(time * 0.9) * 0.045;
+
+  Raisin.head.rotation.z = headTilt + LifeSystem.headLook.x;
+  Raisin.crown.rotation.z = headTilt * 0.8 + LifeSystem.headLook.x;
+  Raisin.muzzle.rotation.z = headTilt * 0.55 + LifeSystem.headLook.x * 0.5;
+
+  Raisin.head.rotation.x = -LifeSystem.headLook.y * 0.45;
+  Raisin.crown.rotation.x = -LifeSystem.headLook.y * 0.35;
+  Raisin.muzzle.rotation.x = -LifeSystem.headLook.y * 0.25;
+
+  const eyeOpen =
+    State.currentAction === "nap" ? 0.25 :
+    1 - LifeSystem.blinkAmount * 0.92;
+
+  Raisin.leftEye.scale.y = 0.104 * eyeOpen;
+  Raisin.rightEye.scale.y = 0.104 * eyeOpen;
+  Raisin.leftPupil.scale.y = 0.042 * eyeOpen;
+  Raisin.rightPupil.scale.y = 0.042 * eyeOpen;
+
+  if (Raisin.leftEyeShine && Raisin.rightEyeShine) {
+    Raisin.leftEyeShine.visible = eyeOpen > 0.35;
+    Raisin.rightEyeShine.visible = eyeOpen > 0.35;
+  }
+
+  const pupilShiftX = LifeSystem.headLook.x * 0.08;
+  const pupilShiftY = LifeSystem.headLook.y * 0.045;
+
+  Raisin.leftPupil.position.x = -0.205 + pupilShiftX;
+  Raisin.rightPupil.position.x = 0.205 + pupilShiftX;
+  Raisin.leftPupil.position.y = 1.675 + pupilShiftY;
+  Raisin.rightPupil.position.y = 1.675 + pupilShiftY;
+
+  const baseTailSpeed =
+    State.currentAction === "playToy" ? 13 :
+    State.currentAction === "anticipateTreat" || State.currentAction === "eatTreat" ? 8 :
+    State.currentAction === "pet" ? 11 :
+    State.currentAction === "call" ? 7 :
+    State.currentAction === "nap" ? 1 :
+    4;
+
+  const tailAmp =
+    State.currentAction === "playToy" ? 0.62 :
+    State.currentAction === "pet" ? 0.42 :
+    State.currentAction === "call" ? 0.34 :
+    State.currentAction === "nap" ? 0.05 :
+    0.22;
+
+  Raisin.tail.rotation.z = Math.sin(time * baseTailSpeed) * tailAmp;
+  Raisin.tail.rotation.y = Math.cos(time * baseTailSpeed * 0.5) * tailAmp * 0.25;
+
+  const earBase =
+    State.currentAction === "playToy" ? Math.sin(time * 9) * 0.09 :
+    State.currentAction === "call" ? Math.sin(time * 4) * 0.06 :
+    State.currentAction === "pet" ? Math.sin(time * 6) * 0.04 :
+    Math.sin(time * 1.7) * 0.018;
+
+  Raisin.leftEar.rotation.z = -0.2 + earBase;
+  Raisin.rightEar.rotation.z = 0.2 - earBase;
+  Raisin.leftEar.rotation.x = -0.08 + Math.sin(time * 1.1) * 0.012;
+  Raisin.rightEar.rotation.x = -0.08 + Math.cos(time * 1.1) * 0.012;
+
+  if (State.currentAction === "anticipateTreat") {
+  Raisin.head.position.z = 0.82 + 0.035;
+  Raisin.muzzle.position.z = 1.16 + 0.05;
+  Raisin.nose.position.z = 1.42 + 0.055;
+
+  Raisin.head.rotation.x -= 0.05;
+  Raisin.leftEye.scale.x = 0.087 * 1.08;
+  Raisin.rightEye.scale.x = 0.087 * 1.08;
+}
+
+if (State.currentAction === "eatTreat") {
+  Raisin.head.position.z = 0.82 + Math.sin(time * 9) * 0.025 + 0.055;
+  Raisin.muzzle.position.z = 1.16 + Math.sin(time * 12) * 0.035 + 0.05;
+  Raisin.nose.position.z = 1.42 + Math.sin(time * 12) * 0.035 + 0.05;
+
+  Raisin.muzzle.position.y -= Math.abs(Math.sin(time * 12)) * 0.025;
+  Raisin.nose.position.y -= Math.abs(Math.sin(time * 12)) * 0.025;
+}
+
+if (State.currentAction === "playToy") {
+  Raisin.root.position.x = Math.sin(time * 3.2) * 0.045;
+  Raisin.root.position.z = Math.cos(time * 2.5) * 0.035;
+
+  Raisin.head.rotation.z += Math.sin(time * 5.5) * 0.1;
+  Raisin.crown.rotation.z += Math.sin(time * 5.5) * 0.08;
+  Raisin.muzzle.rotation.z += Math.sin(time * 5.5) * 0.06;
+}
+
+  if (State.currentAction === "pet") {
+  const lean = PettingSystem.leanAmount || 0;
+  const burst = PettingSystem.affectionBurst || 0;
+
+  Raisin.head.position.y += Math.sin(time * 8) * 0.012;
+  Raisin.head.position.z += 0.04 * lean;
+  Raisin.crown.position.z += 0.035 * lean;
+  Raisin.muzzle.position.y -= 0.018 + burst * 0.012;
+  Raisin.muzzle.position.z += 0.045 * lean;
+  Raisin.nose.position.z += 0.045 * lean;
+
+  Raisin.root.position.y = 0.34 - 0.015;
+  Raisin.root.rotation.x = -0.035 * lean;
+
+  if (PettingSystem.activeZone === "ear") {
+    Raisin.leftEar.rotation.x -= 0.045 * burst;
+    Raisin.rightEar.rotation.x -= 0.045 * burst;
+  }
+
+  if (PettingSystem.activeZone === "chest") {
+    Raisin.chest.scale.x = 0.38 + burst * 0.035;
+    Raisin.chest.scale.y = 0.42 + burst * 0.035;
+  }
+} else if (State.currentAction === "nap") {
+    Raisin.root.position.y += (0.26 - Raisin.root.position.y) * 0.035;
+    Raisin.head.rotation.x += 0.12;
+    Raisin.tail.rotation.z *= 0.4;
+  } else {
+    Raisin.root.position.y += (0.34 - Raisin.root.position.y) * 0.035;
+  }
+}
 
     /************************************************************
      * 13. DEBUG PANEL
@@ -1308,7 +1672,10 @@ createRaisin();
 
       controls.update();
       animateRaisin(elapsed, delta);
-      updateDebug();
+PettingSystem.decay(delta);
+PettingSystem.updateHearts(delta);
+ToySystem.update(elapsed, delta);
+updateDebug();
 
       renderer.render(scene, camera);
       requestAnimationFrame(tick);
