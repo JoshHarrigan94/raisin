@@ -336,18 +336,27 @@
      ************************************************************/
 
     const State = {
-      bond: 35,
-      affection: 45,
-      energy: 62,
-      hunger: 40,
-      mood: "Curious",
-      currentAction: "idle",
-      isPointerDown: false,
-      pointer: new THREE.Vector2(),
-      pointerWorld: new THREE.Vector3(),
-      lastPetTime: 0,
-      debug: false
-    };
+  bond: 35,
+  affection: 45,
+  energy: 62,
+  hunger: 40,
+  playfulness: 54,
+  comfort: 48,
+  trust: 38,
+
+  mood: "Curious",
+  bondStage: "Getting to know you",
+  currentAction: "idle",
+
+  isPointerDown: false,
+  pointer: new THREE.Vector2(),
+  pointerWorld: new THREE.Vector3(),
+  lastPetTime: 0,
+
+  sessionSeconds: 0,
+  lastMoodUpdate: 0,
+  debug: false
+};
 
     function clamp(value, min, max) {
       return Math.max(min, Math.min(max, value));
@@ -359,13 +368,166 @@
     }
 
     function addBond(amount) {
-      State.bond = clamp(State.bond + amount, 0, 100);
-      document.getElementById("bondMeter").style.width = `${State.bond}%`;
-    }
+  State.bond = clamp(State.bond + amount, 0, 100);
+  State.trust = clamp(State.trust + amount * 0.22, 0, 100);
+
+  document.getElementById("bondMeter").style.width = `${State.bond}%`;
+
+  const title = document.querySelector(".mood-title");
+  if (title) title.textContent = MoodEngine.describeBond();
+}
 
     function setHint(text) {
       document.getElementById("hintText").textContent = text;
     }
+
+/************************************************************
+ * 03B. MOOD AND BOND ENGINE
+ ************************************************************/
+
+const MoodEngine = {
+  bondStages: [
+    { min: 0, label: "Getting to know you" },
+    { min: 25, label: "New friend" },
+    { min: 50, label: "Trusted human" },
+    { min: 75, label: "Best friends" },
+    { min: 92, label: "Soul dog bond" }
+  ],
+
+  idleMoods: [
+    "Curious",
+    "Content",
+    "Watching You",
+    "Soft Eyes",
+    "Waiting",
+    "Settled"
+  ],
+
+  actionLockMoods: new Set([
+    "Happy",
+    "Melting",
+    "Best Friends",
+    "Treat Locked",
+    "Very Interested",
+    "Satisfied",
+    "Play Bow",
+    "Playful",
+    "Listening",
+    "Sleepy"
+  ]),
+
+  update(delta, time) {
+    State.sessionSeconds += delta;
+
+    this.decayNeeds(delta);
+    this.updateBondStage();
+    this.updateAutomaticMood(time);
+    this.updateHudTone();
+  },
+
+  decayNeeds(delta) {
+    State.affection = clamp(State.affection - delta * 0.28, 0, 100);
+    State.energy = clamp(State.energy - delta * 0.08, 0, 100);
+    State.hunger = clamp(State.hunger + delta * 0.12, 0, 100);
+    State.playfulness = clamp(State.playfulness - delta * 0.06, 0, 100);
+
+    if (State.currentAction === "pet") {
+      State.comfort = clamp(State.comfort + delta * 2.2, 0, 100);
+      State.trust = clamp(State.trust + delta * 0.9, 0, 100);
+    }
+
+    if (State.currentAction === "playToy") {
+      State.playfulness = clamp(State.playfulness + delta * 2.4, 0, 100);
+      State.energy = clamp(State.energy - delta * 1.2, 0, 100);
+    }
+
+    if (State.currentAction === "nap") {
+      State.energy = clamp(State.energy + delta * 3.2, 0, 100);
+      State.comfort = clamp(State.comfort + delta * 1.4, 0, 100);
+    }
+  },
+
+  updateBondStage() {
+    let stage = this.bondStages[0].label;
+
+    for (const item of this.bondStages) {
+      if (State.bond >= item.min) stage = item.label;
+    }
+
+    State.bondStage = stage;
+  },
+
+  updateAutomaticMood(time) {
+    if (State.currentAction !== "idle") return;
+
+    if (time - State.lastMoodUpdate < 4.5) return;
+    State.lastMoodUpdate = time;
+
+    if (State.hunger > 78) {
+      setMood("Snack Thinking");
+      setHint("Raisin may be wondering about treats.");
+      return;
+    }
+
+    if (State.energy < 22) {
+      setMood("Dozy");
+      setHint("She is getting sleepy.");
+      return;
+    }
+
+    if (State.affection < 22) {
+      setMood("Waiting");
+      setHint("She could use a little fuss.");
+      return;
+    }
+
+    if (State.bond > 75 && Math.random() < 0.45) {
+      setMood("Soft Eyes");
+      setHint("She is quietly happy you are here.");
+      return;
+    }
+
+    const mood = this.idleMoods[Math.floor(Math.random() * this.idleMoods.length)];
+    setMood(mood);
+
+    const hints = {
+      Curious: "She is watching your hand.",
+      Content: "She feels settled.",
+      "Watching You": "Raisin is keeping an eye on you.",
+      "Soft Eyes": "That little look means trust.",
+      Waiting: "She is waiting for attention.",
+      Settled: "Quiet companionship mode."
+    };
+
+    setHint(hints[mood] || "Drag over Raisin to pet her.");
+  },
+
+  updateHudTone() {
+    const brand = document.querySelector(".brand");
+    const card = document.querySelector(".mood-card");
+
+    if (!brand || !card) return;
+
+    if (State.bond >= 75) {
+      brand.style.borderColor = "rgba(255, 216, 138, 0.32)";
+      card.style.borderColor = "rgba(255, 216, 138, 0.36)";
+    } else if (State.bond >= 50) {
+      brand.style.borderColor = "rgba(217, 150, 91, 0.28)";
+      card.style.borderColor = "rgba(217, 150, 91, 0.28)";
+    } else {
+      brand.style.borderColor = "rgba(255,255,255,0.16)";
+      card.style.borderColor = "rgba(255,255,255,0.14)";
+    }
+  },
+
+  describeBond() {
+    if (State.bond >= 92) return "Soul dog bond";
+    if (State.bond >= 75) return "Best friends";
+    if (State.bond >= 50) return "Trusted human";
+    if (State.bond >= 25) return "New friend";
+    return "Getting to know you";
+  }
+};
 
     /************************************************************
      * 04. THREE CORE
@@ -394,7 +556,7 @@
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.1;
+    renderer.toneMappingExposure = 1.24;
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
@@ -414,100 +576,113 @@
      ************************************************************/
 
     const Materials = {
-      coatDark: new THREE.MeshStandardMaterial({
-        color: CONFIG.raisin.coatDark,
-        roughness: 0.72,
-        metalness: 0.02
-      }),
+  coatDark: new THREE.MeshStandardMaterial({
+    color: CONFIG.raisin.coatDark,
+    roughness: 0.82,
+    metalness: 0.01
+  }),
 
-      coatMid: new THREE.MeshStandardMaterial({
-        color: CONFIG.raisin.coatMid,
-        roughness: 0.68,
-        metalness: 0.02
-      }),
+  coatMid: new THREE.MeshStandardMaterial({
+    color: CONFIG.raisin.coatMid,
+    roughness: 0.78,
+    metalness: 0.01
+  }),
 
-      tan: new THREE.MeshStandardMaterial({
-        color: CONFIG.raisin.tan,
-        roughness: 0.7,
-        metalness: 0.01
-      }),
+  tan: new THREE.MeshStandardMaterial({
+    color: CONFIG.raisin.tan,
+    roughness: 0.74,
+    metalness: 0.01
+  }),
 
-      eye: new THREE.MeshPhysicalMaterial({
-        color: CONFIG.raisin.amberEye,
-        roughness: 0.12,
-        metalness: 0,
-        clearcoat: 1,
-        clearcoatRoughness: 0.05
-      }),
+  furHalo: new THREE.MeshBasicMaterial({
+    color: 0x7a3f26,
+    transparent: true,
+    opacity: 0.16,
+    depthWrite: false
+  }),
 
-      pupil: new THREE.MeshBasicMaterial({
-        color: 0x080604
-      }),
+  eye: new THREE.MeshPhysicalMaterial({
+    color: CONFIG.raisin.amberEye,
+    roughness: 0.05,
+    metalness: 0,
+    transmission: 0.05,
+    clearcoat: 1,
+    clearcoatRoughness: 0.02,
+    reflectivity: 1
+  }),
 
-      nose: new THREE.MeshPhysicalMaterial({
-        color: CONFIG.raisin.nose,
-        roughness: 0.22,
-        metalness: 0,
-        clearcoat: 0.85,
-        clearcoatRoughness: 0.12
-      }),
+  pupil: new THREE.MeshBasicMaterial({
+    color: 0x070403
+  }),
 
-      roomFloor: new THREE.MeshStandardMaterial({
-        color: 0x4b2d1f,
-        roughness: 0.85
-      }),
+  nose: new THREE.MeshPhysicalMaterial({
+    color: CONFIG.raisin.nose,
+    roughness: 0.14,
+    metalness: 0,
+    clearcoat: 1,
+    clearcoatRoughness: 0.05
+  }),
 
-      rug: new THREE.MeshStandardMaterial({
-        color: 0x8a5433,
-        roughness: 0.9
-      }),
+  roomFloor: new THREE.MeshStandardMaterial({
+    color: 0x51311f,
+    roughness: 0.88
+  }),
 
-      toy: new THREE.MeshStandardMaterial({
-        color: 0xe7b34c,
-        roughness: 0.5
-      }),
+  rug: new THREE.MeshStandardMaterial({
+    color: 0x9a6040,
+    roughness: 0.92
+  }),
 
-      treat: new THREE.MeshStandardMaterial({
-  color: 0xb87835,
-  roughness: 0.6
-}),
+  toy: new THREE.MeshStandardMaterial({
+    color: 0xf0bd4f,
+    roughness: 0.48
+  }),
 
-chest: new THREE.MeshStandardMaterial({
-  color: 0x6a3824,
-  roughness: 0.78,
-  metalness: 0.01
-})
-    };
+  treat: new THREE.MeshStandardMaterial({
+    color: 0xb87835,
+    roughness: 0.6
+  }),
+
+  chest: new THREE.MeshStandardMaterial({
+    color: 0x704029,
+    roughness: 0.82,
+    metalness: 0.01
+  })
+};
 
     /************************************************************
      * 06. LIGHTING
      ************************************************************/
 
     function createLighting() {
-      const ambient = new THREE.HemisphereLight(0xffe2bd, 0x1b0e08, 1.3);
-      scene.add(ambient);
+  const ambient = new THREE.HemisphereLight(0xffe6c7, 0x170b06, 1.55);
+  scene.add(ambient);
 
-      const key = new THREE.DirectionalLight(0xffc58a, 3.2);
-      key.position.set(4, 6, 5);
-      key.castShadow = true;
-      key.shadow.mapSize.width = 2048;
-      key.shadow.mapSize.height = 2048;
-      key.shadow.camera.near = 0.5;
-      key.shadow.camera.far = 20;
-      key.shadow.camera.left = -6;
-      key.shadow.camera.right = 6;
-      key.shadow.camera.top = 6;
-      key.shadow.camera.bottom = -6;
-      scene.add(key);
+  const key = new THREE.DirectionalLight(0xffc08a, 3.8);
+  key.position.set(4.5, 6.5, 5.5);
+  key.castShadow = true;
+  key.shadow.mapSize.width = 2048;
+  key.shadow.mapSize.height = 2048;
+  key.shadow.camera.near = 0.5;
+  key.shadow.camera.far = 20;
+  key.shadow.camera.left = -6;
+  key.shadow.camera.right = 6;
+  key.shadow.camera.top = 6;
+  key.shadow.camera.bottom = -6;
+  scene.add(key);
 
-      const rim = new THREE.PointLight(0x9bbcff, 1.2, 8);
-      rim.position.set(-3, 2.5, -3);
-      scene.add(rim);
+  const softFill = new THREE.PointLight(0xffd6aa, 1.5, 7);
+  softFill.position.set(-2.6, 2.2, 3.4);
+  scene.add(softFill);
 
-      const lamp = new THREE.PointLight(0xffa55f, 2.6, 7);
-      lamp.position.set(2.6, 1.5, 1.8);
-      scene.add(lamp);
-    }
+  const rim = new THREE.PointLight(0x9bbcff, 1.4, 8);
+  rim.position.set(-3.4, 2.7, -3.2);
+  scene.add(rim);
+
+  const lamp = new THREE.PointLight(0xffa45e, 3.4, 7.5);
+  lamp.position.set(2.6, 1.5, 1.8);
+  scene.add(lamp);
+}
 
     createLighting();
 
@@ -692,6 +867,17 @@ function makeCockerEar(name, side) {
   group.rotation.y = side * 0.05;
 
   return group;
+}
+
+function addFurHalo(targetMesh, scaleBoost = 1.035) {
+  const halo = targetMesh.clone();
+  halo.name = `${targetMesh.name}-soft-fur-halo`;
+  halo.material = Materials.furHalo;
+  halo.scale.multiplyScalar(scaleBoost);
+  halo.castShadow = false;
+  halo.receiveShadow = false;
+  targetMesh.add(halo);
+  return halo;
 }
 
 function createRaisin() {
@@ -1069,6 +1255,18 @@ function createRaisin() {
     Raisin.tail,
     tailFeather
   );
+  
+  [
+  Raisin.body,
+  Raisin.ribcage,
+  Raisin.haunches,
+  Raisin.head,
+  Raisin.crown,
+  Raisin.neck,
+  Raisin.chest
+].forEach(mesh => {
+  if (mesh) addFurHalo(mesh, 1.045);
+});
 
   Raisin.gestureZones = [
     Raisin.head,
@@ -1126,7 +1324,9 @@ const ToySystem = {
     this.treat.rotation.set(0.2, 0.6, -0.15);
 
     State.currentAction = "anticipateTreat";
-    State.hunger = clamp(State.hunger - 8, 0, 100);
+    State.hunger = clamp(State.hunger - 18, 0, 100);
+State.affection = clamp(State.affection + 5, 0, 100);
+State.trust = clamp(State.trust + 2.5, 0, 100);
 
     setMood("Treat Locked");
     setHint("She has spotted the treat.");
@@ -1146,7 +1346,9 @@ const ToySystem = {
     );
 
     State.currentAction = "playToy";
-    State.energy = clamp(State.energy - 6, 0, 100);
+    State.energy = clamp(State.energy - 8, 0, 100);
+State.playfulness = clamp(State.playfulness + 18, 0, 100);
+State.affection = clamp(State.affection + 3, 0, 100);
 
     setMood("Play Bow");
     setHint("Ball mode activated.");
@@ -1424,18 +1626,38 @@ window.addEventListener("pointerup", onPointerUp);
     });
 
     document.getElementById("callBtn").addEventListener("click", () => {
-      State.currentAction = "call";
-      setMood("Listening");
-      setHint("Raisin heard you");
-      addBond(CONFIG.interaction.callGain);
-    });
+  State.currentAction = "call";
+  State.affection = clamp(State.affection + 4, 0, 100);
+  State.trust = clamp(State.trust + 2, 0, 100);
+
+  setMood("Listening");
+  setHint("Raisin heard you. Head tilt engaged.");
+  addBond(CONFIG.interaction.callGain);
+
+  setTimeout(() => {
+    if (State.currentAction === "call") {
+      State.currentAction = "idle";
+      setMood("Watching You");
+    }
+  }, 2400);
+});
 
     document.getElementById("napBtn").addEventListener("click", () => {
-      State.currentAction = "nap";
-      setMood("Sleepy");
-      setHint("She is settling down");
-      State.energy = clamp(State.energy + 8, 0, 100);
-    });
+  State.currentAction = "nap";
+  State.comfort = clamp(State.comfort + 8, 0, 100);
+
+  setMood("Sleepy");
+  setHint("She is settling down beside you.");
+  State.energy = clamp(State.energy + 8, 0, 100);
+
+  setTimeout(() => {
+    if (State.currentAction === "nap") {
+      State.currentAction = "idle";
+      setMood("Dozy");
+      setHint("She had a tiny reset.");
+    }
+  }, 4200);
+});
 
     /************************************************************
  * 12. ANIMATION SYSTEM
@@ -1654,12 +1876,16 @@ if (State.currentAction === "playToy") {
 
       panel.innerHTML = `
         mood: ${State.mood}<br/>
+        stage: ${State.bondStage}<br/>
         action: ${State.currentAction}<br/>
         bond: ${State.bond.toFixed(1)}<br/>
-        affection: ${State.affection}<br/>
-        energy: ${State.energy}<br/>
-        hunger: ${State.hunger}
-      `;
+        trust: ${State.trust.toFixed(1)}<br/>
+        affection: ${State.affection.toFixed(1)}<br/>
+        comfort: ${State.comfort.toFixed(1)}<br/>
+        play: ${State.playfulness.toFixed(1)}<br/>
+        energy: ${State.energy.toFixed(1)}<br/>
+        hunger: ${State.hunger.toFixed(1)}
+`;
     }
 
     /************************************************************
@@ -1675,7 +1901,9 @@ if (State.currentAction === "playToy") {
 PettingSystem.decay(delta);
 PettingSystem.updateHearts(delta);
 ToySystem.update(elapsed, delta);
+MoodEngine.update(delta, elapsed);
 updateDebug();
+
 
       renderer.render(scene, camera);
       requestAnimationFrame(tick);
