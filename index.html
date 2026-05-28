@@ -664,7 +664,7 @@ const MoodEngine = {
   antialias: true,
   alpha: false,
   powerPreference: "high-performance",
-  preserveDrawingBuffer: false
+  preserveDrawingBuffer: true
 });
 
     renderer.setSize(window.innerWidth, window.innerHeight);
@@ -1774,6 +1774,42 @@ window.addEventListener("pointerup", onPointerUp);
   }, 4200);
 });
 
+document.getElementById("photoBtn").addEventListener("click", () => {
+  const hud = document.querySelector(".hud");
+  hud.classList.add("hidden-for-photo");
+
+  setTimeout(() => {
+    renderer.render(scene, camera);
+
+    const link = document.createElement("a");
+    link.download = "raisin-best-friends.png";
+    link.href = renderer.domElement.toDataURL("image/png");
+    link.click();
+
+    hud.classList.remove("hidden-for-photo");
+    setHint("Photo saved.");
+    setMood("Photogenic");
+  }, 260);
+});
+
+document.getElementById("resetBtn").addEventListener("click", () => {
+  State.bond = 35;
+  State.affection = 45;
+  State.energy = 62;
+  State.hunger = 40;
+  State.playfulness = 54;
+  State.comfort = 48;
+  State.trust = 38;
+  State.currentAction = "idle";
+
+  document.getElementById("bondMeter").style.width = `${State.bond}%`;
+
+  const title = document.querySelector(".mood-title");
+  if (title) title.textContent = "Getting to know you";
+
+  setMood("Curious");
+  setHint("Fresh start. Raisin is ready.");
+});
     /************************************************************
  * 12. ANIMATION SYSTEM
  ************************************************************/
@@ -2045,7 +2081,21 @@ updateDebug();
      ************************************************************/
 
     document.getElementById("bondMeter").style.width = `${State.bond}%`;
-    setMood("Curious");
+
+const title = document.querySelector(".mood-title");
+if (title) title.textContent = "Getting to know you";
+
+setMood("Curious");
+setHint("Touch and drag over Raisin to pet her.");
+
+setTimeout(() => {
+  const loading = document.getElementById("loadingScreen");
+  if (loading) loading.classList.add("hidden");
+}, 700);
+
+setTimeout(() => {
+  setHint("Try her ears, head, chest, treat, or toy.");
+}, 2800);
   </script>
 </body>
 </html>
