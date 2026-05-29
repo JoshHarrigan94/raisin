@@ -1411,6 +1411,47 @@ function createRaisin() {
 }
 
 createRaisin();
+forceRaisinVisible();
+
+function forceRaisinVisible() {
+  console.log("Raisin visibility pass running");
+
+  Raisin.root.visible = true;
+  Raisin.root.position.set(0, 0.2, 0);
+  Raisin.root.rotation.set(0, 0, 0);
+  Raisin.root.scale.set(1.15, 1.15, 1.15);
+
+  Raisin.parts.forEach(part => {
+    if (!part) return;
+    part.visible = true;
+    part.frustumCulled = false;
+
+    if (part.material) {
+      part.material.transparent = false;
+      part.material.opacity = 1;
+      part.material.needsUpdate = true;
+    }
+  });
+
+  const debugMarker = new THREE.Mesh(
+    new THREE.SphereGeometry(0.22, 32, 24),
+    new THREE.MeshBasicMaterial({ color: 0xffd88a })
+  );
+
+  debugMarker.name = "RAISIN_DEBUG_VISIBLE_MARKER";
+  debugMarker.position.set(0, 2.35, 0.15);
+  Raisin.root.add(debugMarker);
+
+  const helper = new THREE.BoxHelper(Raisin.root, 0xffd88a);
+  helper.name = "RAISIN_DEBUG_BOX";
+  scene.add(helper);
+
+  camera.position.set(0, 2.2, 5.2);
+  controls.target.set(0, 1.15, 0);
+  controls.update();
+
+  setHint("Debug mode: Raisin should now be centred.");
+}
 
     /************************************************************
  * 09. TOYS AND TREATS SYSTEM
@@ -2082,7 +2123,10 @@ MoodEngine.update(delta, elapsed);
 updateDebug();
 
 
-      renderer.render(scene, camera);
+      const debugBox = scene.getObjectByName("RAISIN_DEBUG_BOX");
+if (debugBox) debugBox.update();
+
+renderer.render(scene, camera);
       requestAnimationFrame(tick);
     }
 
