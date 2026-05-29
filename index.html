@@ -2067,7 +2067,9 @@ if (State.currentAction === "playToy") {
      * 14. MAIN LOOP
      ************************************************************/
 
-    function tick() {
+    const clock = new THREE.Clock();
+
+function tick() {
       const elapsed = clock.getElapsedTime();
       const delta = clock.getDelta();
 
@@ -2142,7 +2144,6 @@ window.addEventListener("error", (event) => {
   document.body.appendChild(crash);
 
   console.error("Raisin app error:", event.error || event.message);
-});
 });
 
 setTimeout(() => {
