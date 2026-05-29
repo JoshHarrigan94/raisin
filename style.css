@@ -1,0 +1,345 @@
+/************************************************************
+ * RAISIN BEST FRIENDS — STORYBOOK STYLE
+ ************************************************************/
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  font-family:
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    system-ui,
+    sans-serif;
+  background: #1b120f;
+  color: #fff8ef;
+}
+
+body {
+  touch-action: none;
+  overscroll-behavior: none;
+}
+
+/************************************************************
+ * APP SHELL
+ ************************************************************/
+
+#app {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 30%, rgba(255, 215, 160, 0.18), transparent 35%),
+    linear-gradient(180deg, #2b1a16 0%, #1a100e 52%, #0f0908 100%);
+}
+
+/************************************************************
+ * WORLD / CANVAS
+ ************************************************************/
+
+#world {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+#raisinCanvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/************************************************************
+ * TOP UI
+ ************************************************************/
+
+#topBar {
+  position: absolute;
+  top: max(18px, env(safe-area-inset-top));
+  left: 18px;
+  right: 18px;
+  z-index: 10;
+
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 14px;
+  pointer-events: none;
+}
+
+.glassCard {
+  pointer-events: auto;
+
+  min-width: 0;
+  max-width: 48%;
+  padding: 16px 18px;
+
+  border: 1px solid rgba(255, 245, 230, 0.18);
+  border-radius: 28px;
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(255, 244, 228, 0.16),
+      rgba(255, 244, 228, 0.06)
+    );
+
+  box-shadow:
+    0 18px 45px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16);
+
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.glassCard h1 {
+  margin: 0 0 8px;
+  font-size: 24px;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  color: #fff6e8;
+}
+
+.glassCard p {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.35;
+  color: rgba(255, 244, 232, 0.78);
+}
+
+.statusCard {
+  width: 230px;
+}
+
+.smallLabel {
+  display: block;
+  margin-bottom: 10px;
+  font-size: 14px;
+  color: rgba(255, 244, 232, 0.72);
+}
+
+.bondBar {
+  width: 100%;
+  height: 12px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+}
+
+#bondFill {
+  width: 42%;
+  height: 100%;
+  border-radius: inherit;
+  background:
+    linear-gradient(
+      90deg,
+      #f5b86d,
+      #ffd78f
+    );
+  box-shadow: 0 0 18px rgba(255, 199, 120, 0.35);
+}
+
+.statusCard h2 {
+  margin: 12px 0 0;
+  font-size: 20px;
+  letter-spacing: -0.02em;
+  color: #fff6e8;
+}
+
+/************************************************************
+ * DIALOGUE
+ ************************************************************/
+
+#dialogueBubble {
+  position: absolute;
+  left: 50%;
+  bottom: calc(178px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  z-index: 11;
+
+  max-width: min(82vw, 420px);
+  padding: 12px 22px;
+
+  border: 1px solid rgba(255, 245, 230, 0.16);
+  border-radius: 999px;
+
+  background: rgba(16, 10, 9, 0.62);
+
+  box-shadow:
+    0 12px 30px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+
+  font-size: 15px;
+  line-height: 1.25;
+  text-align: center;
+  color: rgba(255, 244, 232, 0.9);
+
+  pointer-events: none;
+}
+
+/************************************************************
+ * CONTROLS
+ ************************************************************/
+
+#controls {
+  position: absolute;
+  left: 50%;
+  bottom: calc(30px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  z-index: 12;
+
+  display: grid;
+  grid-template-columns: repeat(3, 88px);
+  gap: 14px;
+
+  padding: 0;
+}
+
+.actionButton {
+  width: 88px;
+  height: 88px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+
+  border: 1px solid rgba(255, 245, 230, 0.2);
+  border-radius: 28px;
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(255, 232, 200, 0.26),
+      rgba(255, 232, 200, 0.09)
+    );
+
+  box-shadow:
+    0 15px 32px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16);
+
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+
+  color: #fff6e8;
+  font: inherit;
+  font-size: 28px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.actionButton span {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  color: rgba(255, 244, 232, 0.86);
+}
+
+.actionButton:active {
+  transform: translateY(2px) scale(0.97);
+  background:
+    linear-gradient(
+      145deg,
+      rgba(255, 212, 164, 0.36),
+      rgba(255, 212, 164, 0.12)
+    );
+}
+
+/************************************************************
+ * SMALL SCREENS
+ ************************************************************/
+
+@media (max-width: 430px) {
+  #topBar {
+    left: 14px;
+    right: 14px;
+    gap: 10px;
+  }
+
+  .glassCard {
+    padding: 14px 15px;
+    border-radius: 24px;
+  }
+
+  .glassCard h1 {
+    font-size: 20px;
+  }
+
+  .glassCard p {
+    font-size: 14px;
+  }
+
+  .statusCard {
+    width: 200px;
+  }
+
+  .statusCard h2 {
+    font-size: 18px;
+  }
+
+  #controls {
+    grid-template-columns: repeat(3, 78px);
+    gap: 12px;
+  }
+
+  .actionButton {
+    width: 78px;
+    height: 78px;
+    border-radius: 24px;
+    font-size: 25px;
+  }
+
+  .actionButton span {
+    font-size: 12px;
+  }
+
+  #dialogueBubble {
+    bottom: calc(166px + env(safe-area-inset-bottom));
+    font-size: 14px;
+  }
+}
+
+/************************************************************
+ * VERY SHORT SCREENS
+ ************************************************************/
+
+@media (max-height: 720px) {
+  .glassCard p {
+    display: none;
+  }
+
+  #dialogueBubble {
+    bottom: calc(150px + env(safe-area-inset-bottom));
+  }
+
+  #controls {
+    grid-template-columns: repeat(6, 60px);
+    gap: 8px;
+    bottom: calc(22px + env(safe-area-inset-bottom));
+  }
+
+  .actionButton {
+    width: 60px;
+    height: 60px;
+    border-radius: 20px;
+    font-size: 21px;
+  }
+
+  .actionButton span {
+    font-size: 10px;
+  }
+}
